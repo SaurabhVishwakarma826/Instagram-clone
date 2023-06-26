@@ -1,7 +1,15 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:instagram_clone/resources/auth_method.dart';
+import 'package:instagram_clone/responsive/mobile_screen_layout.dart';
+import 'package:instagram_clone/responsive/resoponsive_layout_screen.dart';
+import 'package:instagram_clone/responsive/web_screen_layout.dart';
+import 'package:instagram_clone/screens/login_screen.dart';
 import 'package:instagram_clone/utils/colors.dart';
 import 'package:instagram_clone/widgets/text_input_field.dart';
+import 'package:image_picker/image_picker.dart';
+import '../utils/utils.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
@@ -16,6 +24,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _bioController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   bool _isLoading = false;
+  Uint8List? _image;
 
   void dispose() {
     super.dispose();
@@ -29,6 +38,46 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() {
       _isLoading = true;
     });
+  }
+
+  void selectImage() async {
+    Uint8List im = await picImage(ImageSource.gallery);
+    setState(() {
+      _image = im;
+    });
+  }
+
+  void signUp() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    String res = await AuthMethods().signUpUser(
+        email: _emailController.text,
+        passowrd: _passwordController.text,
+        username: _usernameController.text,
+        bio: _bioController.text,
+        file: _image!);
+    setState(() {
+      _isLoading = false;
+    });
+    if (res != 'success') {
+      showSnackBar(res, context);
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const ResponsiveLayout(
+            webScreenLayout: WebScreenLayout(),
+            mobileScreenLayout: MobileScreenLayout(),
+          ),
+        ),
+      );
+    }
+  }
+
+  void navigatorToLogin() {
+    Navigator.of(context as BuildContext)
+        .push(MaterialPageRoute(builder: (context) => LoginScreen()));
   }
 
   @override
@@ -48,27 +97,30 @@ class _SignupScreenState extends State<SignupScreen> {
                 color: primaryColor,
                 height: 64,
               ),
-              SizedBox(
+              const SizedBox(
                 height: 64,
               ),
               // Avatar
               Stack(
                 children: [
-                  CircleAvatar(
-                    radius: 64,
-                    backgroundImage: NetworkImage(
-                        'https://images.unsplash.com/photo-1687639079529-410d2f17ee50?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxlZGl0b3JpYWwtZmVlZHwxNXx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=500&q=60'),
-                  ),
+                  _image != null
+                      ? CircleAvatar(
+                          radius: 64, backgroundImage: MemoryImage(_image!))
+                      : const CircleAvatar(
+                          radius: 64,
+                          backgroundImage: NetworkImage(
+                              'https://static.vecteezy.com/system/resources/thumbnails/002/534/006/small/social-media-chatting-online-blank-profile-picture-head-and-body-icon-people-standing-icon-grey-background-free-vector.jpg'),
+                        ),
                   Positioned(
-                    bottom: -10,
+                      bottom: -10,
                       left: 80,
                       child: IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.add_a_photo),
-                  )),
+                        onPressed: selectImage,
+                        icon: const Icon(Icons.add_a_photo),
+                      )),
                 ],
               ),
-              SizedBox(
+              const SizedBox(
                 height: 24,
               ),
               // Text field userName
@@ -76,7 +128,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   textEditingController: _usernameController,
                   hintText: "Enter your username here",
                   textInputType: TextInputType.text),
-              SizedBox(
+              const SizedBox(
                 height: 24,
               ),
               // Text field input for email
@@ -84,37 +136,44 @@ class _SignupScreenState extends State<SignupScreen> {
                   textEditingController: _emailController,
                   hintText: "Enter your Email here",
                   textInputType: TextInputType.emailAddress),
-              SizedBox(
+              const SizedBox(
                 height: 24,
               ),
               TextInputField(
                   textEditingController: _passwordController,
                   hintText: "Enter your password here",
+                  isPass: true,
                   textInputType: TextInputType.text),
-              SizedBox(
+              const SizedBox(
                 height: 24,
               ),
               TextInputField(
                   textEditingController: _bioController,
                   hintText: "Enter your bio here",
                   textInputType: TextInputType.text),
-              SizedBox(
+              const SizedBox(
                 height: 24,
               ),
               GestureDetector(
-                onTap: () {},
+                onTap: signUp,
                 child: Container(
-                  child: Text("Log in"),
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: primaryColor,
+                          ),
+                        )
+                      : Text("Sign up"),
                   width: double.infinity,
                   alignment: Alignment.center,
                   padding: EdgeInsets.symmetric(vertical: 12),
-                  decoration: ShapeDecoration(
+                  decoration: const ShapeDecoration(
                       color: blueColor,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(Radius.circular(4)))),
                 ),
               ),
-              SizedBox(
+              const SizedBox(
                 height: 24,
               ),
               Flexible(child: Container(), flex: 2),
@@ -122,17 +181,17 @@ class _SignupScreenState extends State<SignupScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    child: Text("Don't  Have an account?"),
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text("If you Have an account?"),
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                   ),
                   InkWell(
-                    onTap: () {},
+                    onTap: navigatorToLogin,
                     child: Container(
                       child: Text(
-                        "Sign up",
+                        "Log in",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
                   )
                 ],
