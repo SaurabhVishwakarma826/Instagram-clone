@@ -2,11 +2,18 @@ import 'dart:js_interop';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:instagram_clone/models/user.dart' as model;
 import 'package:instagram_clone/resources/storage_method.dart';
 
 class AuthMethods {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
+
+  Future<model.User>getUserDetails() async{
+    User currentUser = _auth.currentUser!;
+    DocumentSnapshot snap = await _firebaseFirestore.collection('user').doc(currentUser.uid).get();
+    return model.User.fromSnap(snap);
+  }
 
   Future<String> signUpUser({
     required String email,
@@ -29,15 +36,17 @@ class AuthMethods {
             .uploadImageToStorage('profilePic', file, false);
         print(cred.user!.uid);
         //add user to the firebase database
-        await _firebaseFirestore.collection('user').doc(cred.user!.uid).set({
-          'username': username,
-          'uid': cred.user!.uid,
-          'email': email,
-          'bio': bio,
-          'followers': [],
-          'following': [],
-          'photoUrl': photoUrl,
-        });
+
+        model.User user = model.User(
+          username: username,
+          uid: cred.user!.uid,
+          email: email,
+          bio: bio,
+          photUrl: photoUrl,
+          followers: [],
+          following: []
+        );
+        await _firebaseFirestore.collection('user').doc(cred.user!.uid).set(user.toJson());
         res = 'Success';
       }
     } catch (err) {
